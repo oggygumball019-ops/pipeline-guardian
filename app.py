@@ -234,20 +234,31 @@ filtered = runs[runs["status"].isin(status_filter)].copy()
 issues = []
 for _, row in filtered.iterrows():
     matching_quality = quality[quality["dataset"] == str(row["pipeline_id"])]
-    merged = row.to_dict()
-    if not matching_quality.empty:
-        merged.update(matching_quality.iloc[0].to_dict())
-    else:
-        merged.update({"rows": safe_int(row.get("records_processed", 0)), "missing_values": 0,
-                       "duplicate_rows": 0, "last_updated_hours": 0, "expected_min_rows": 1})
-    for severity, title, recommendation in classify(merged, stale_hours):
-        issues.append({
-            "Pipeline": row["pipeline_id"],
-            "Business use": row.get("business_use", "Not specified"),
-            "Severity": severity,
-            "Issue": title,
-            "Recommended next step": recommendation,
-        })
+   
+merged = row.to_dict()
+
+# Preserve quality metadata supplied in the uploaded CSV.
+merged["rows"] = safe_int(
+    row.get("rows", row.get("records_processed", 0))
+)
+merged["last_updated_hours"] = safe_int(
+    row.get("last_updated_hours", 0)
+)
+merged["expected_min_rows"] = safe_int(
+    row.get("expected_min_rows", 1)
+)
+merged["missing_values"] = safe_int(row.get("missing_values", 0))
+merged["duplicate_rows"] = safe_int(row.get("duplicate_rows", 0))
+
+if not matching_quality.empty:
+    merged.update(matching_quality.iloc[0].to_dict())
+
+    # Keep uploaded values when the quality table lacks them.
+    merged["rows"] = safe_int(
+        matching_quality.iloc[0].get(
+            "rows", row.get("rows", row.get("records_processed", 0))
+        )
+    )
 incidents = pd.DataFrame(issues, columns=INCIDENT_COLUMNS)
 
 # Summary metrics
