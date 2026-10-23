@@ -122,8 +122,10 @@ if mode == "Upload pipeline CSV" and uploaded is not None and "runs" in locals()
         "rows": pd.to_numeric(runs["records_processed"], errors="coerce").fillna(0).astype(int),
         "missing_values": 0,
         "duplicate_rows": 0,
-        "last_updated_hours": (pd.Timestamp.now() - pd.to_datetime(runs["last_run"], errors="coerce")).dt.total_seconds().div(3600).fillna(0).round(1),
-        "expected_min_rows": 1
+        "last_updated_hours": (
+            pd.Timestamp.now(tz="Asia/Kolkata").tz_localize(None)
+            - pd.to_datetime(runs["last_run"], errors="coerce")
+        ).dt.total_seconds().div(3600).clip(lower=0).fillna(0).round(1),
     })
 
 runs["status"] = runs["status"].astype(str).str.title()
