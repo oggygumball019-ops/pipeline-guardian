@@ -2,6 +2,10 @@
 
 **Track 04: The Work Behind the Work** — a lightweight data operations dashboard that helps teams spot pipeline failures, delayed jobs, stale datasets, and data-quality risks before business reports are affected.
 
+## Live Demo
+
+Try Pipeline Guardian: https://pipeline-guardian-2ktrne7sbff4qch35j4uvo.streamlit.app/
+
 ## Problem
 
 Teams rely on scheduled data pipelines for reporting and operational decisions. Failures, unexpected zero-row outputs, stale datasets, missing values, and duplicate records can go unnoticed. Investigating these issues manually delays decisions and erodes trust in dashboards.
