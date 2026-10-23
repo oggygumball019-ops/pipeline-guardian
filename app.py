@@ -62,32 +62,84 @@ def demo_quality():
         {"dataset": "web_sessions", "rows": 1800, "missing_values": 7, "duplicate_rows": 2, "last_updated_hours": 1, "expected_min_rows": 1000},
     ], columns=QUALITY_COLUMNS)
 
-
 def classify(row, stale_hours=6):
     issues = []
+
     status = str(row.get("status", "")).strip().lower()
     records = safe_int(row.get("records_processed", row.get("rows", 0)))
     rows = safe_int(row.get("rows", records))
     expected = safe_int(row.get("expected_min_rows", 0))
-    if status == "failed":
-        issues.append(("Critical", "Pipeline run failed", "Inspect the latest job logs, credentials, and upstream dependencies."))
-    if records == 0:
-        issues.append(("High", "No records processed", "Check source availability and confirm whether an empty result is expected."))
-    if status == "delayed":
-        issues.append(("High", "Pipeline is delayed", "Review runtime history and upstream dependencies; rerun only after validating the cause."))
-    if status == "warning":
-        issues.append(("Medium", "Pipeline warning", "Review warning logs and validate the output before refreshing business reports."))
-    age = pd.to_numeric(pd.Series([row.get("last_updated_hours", 0)]), errors="coerce").fillna(0).iloc[0]
-    if age > stale_hours:
-        issues.append(("High", "Dataset may be stale", "Confirm the expected refresh schedule and check the most recent successful run."))
-    if safe_int(row.get("missing_values", 0)) > 0:
-        issues.append(("Medium", "Missing values detected", "Check source fields and transformation rules; quantify affected rows before publishing."))
-    if safe_int(row.get("duplicate_rows", 0)) > 0:
-        issues.append(("Medium", "Duplicate rows detected", "Check primary-key uniqueness and deduplication logic before downstream aggregation."))
-    if rows < expected:
-        issues.append(("High", "Record volume below threshold", "Compare with historical volumes and verify source ingestion completeness."))
-    return issues
 
+    # 1. Pipeline failed
+    if status == "failed":
+        issues.append((
+            "Critical",
+            "Pipeline run failed",
+            "Inspect the latest job logs, credentials, and upstream dependencies."
+        ))
+
+    # 2. No records processed
+    if records == 0:
+        issues.append((
+            "High",
+            "No records processed",
+            "Check source availability and confirm whether an empty result is expected."
+        ))
+
+    # 3. Pipeline delayed
+    if status == "delayed":
+        issues.append((
+            "High",
+            "Pipeline is delayed",
+            "Review runtime history and upstream dependencies; rerun only after validating the cause."
+        ))
+
+    # 4. Pipeline warning
+    if status == "warning":
+        issues.append((
+            "Medium",
+            "Pipeline warning",
+            "Review warning logs and validate the output before refreshing business reports."
+        ))
+
+    # 5. Dataset stale
+    age = pd.to_numeric(
+        pd.Series([row.get("last_updated_hours", 0)]),
+        errors="coerce"
+    ).fillna(0).iloc[0]
+
+    if age > stale_hours:
+        issues.append((
+            "High",
+            "Dataset may be stale",
+            "Confirm expected refresh schedule and check the most recent successful run."
+        ))
+
+    # 6. Missing values
+    if safe_int(row.get("missing_values", 0)) > 0:
+        issues.append((
+            "Medium",
+            "Missing values detected",
+            "Check source fields and transformation rules; quantify affected rows before publishing."
+        ))
+
+    # 7. Duplicate rows
+    if safe_int(row.get("duplicate_rows", 0)) > 0:
+        issues.append((
+            "Medium",
+            "Duplicate rows detected",
+            "Check primary-key uniqueness and deduplication logic before downstream aggregation."
+        ))
+
+    # 8. Record volume below threshold
+    if expected > 0 and rows < expected:
+        issues.append((
+            "High",
+            "Record volume below threshold",
+            "Compare with historical volumes and verify source ingestion completeness."
+        ))
+
+    return issues
 
 def safe_int(value, default=0):
     try:
