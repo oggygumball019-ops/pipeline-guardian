@@ -210,14 +210,28 @@ if mode == "Upload pipeline CSV":
                 now_utc = pd.Timestamp.now(tz="UTC")
                 age_hours = ((now_utc - parsed_utc).dt.total_seconds() / 3600).clip(lower=0)
                 runs = user_df
-                quality = pd.DataFrame({
-                    "dataset": runs["pipeline_id"],
-                    "rows": runs["records_processed"],
-                    "missing_values": 0,
-                    "duplicate_rows": 0,
-                    "last_updated_hours": age_hours.fillna(0).round(1),
-                    "expected_min_rows": 1,
-                })
+               
+quality = pd.DataFrame({
+    "dataset": runs["pipeline_id"],
+    "rows": runs["records_processed"],
+    "missing_values": 0,
+    "duplicate_rows": 0,
+    "last_updated_hours": (
+        pd.to_numeric(user_df["last_updated_hours"], errors="coerce")
+        if "last_updated_hours" in user_df.columns
+        else age_hours
+    ),
+    "expected_min_rows": (
+        pd.to_numeric(user_df["expected_min_rows"], errors="coerce")
+        if "expected_min_rows" in user_df.columns
+        else 1
+    ),
+})
+
+quality["last_updated_hours"] = quality["last_updated_hours"].fillna(0)
+quality["expected_min_rows"] = quality["expected_min_rows"].fillna(1)
+quality = normalize_quality(quality)
+
                 quality = normalize_quality(quality)
                 valid_upload = True
         except Exception as exc:
@@ -235,23 +249,30 @@ issues = []
 for _, row in filtered.iterrows():
     matching_quality = quality[quality["dataset"] == str(row["pipeline_id"])]
    
+
 merged = row.to_dict()
 
-# Preserve quality metadata supplied in the uploaded CSV.
+if not matching_quality.empty:
+    quality_row = matching_quality.iloc[0].to_dict()
+else:
+    quality_row = {}
+
+# Keep uploaded values when present; otherwise use quality metadata.
 merged["rows"] = safe_int(
-    row.get("rows", row.get("records_processed", 0))
+    quality_row.get("rows", row.get("records_processed", 0))
 )
 merged["last_updated_hours"] = safe_int(
-    row.get("last_updated_hours", 0)
+    quality_row.get("last_updated_hours", row.get("last_updated_hours", 0))
 )
 merged["expected_min_rows"] = safe_int(
-    row.get("expected_min_rows", 1)
+    quality_row.get("expected_min_rows", row.get("expected_min_rows", 1))
 )
-merged["missing_values"] = safe_int(row.get("missing_values", 0))
-merged["duplicate_rows"] = safe_int(row.get("duplicate_rows", 0))
-
-if not matching_quality.empty:
-    merged.update(matching_quality.iloc[0].to_dict())
+merged["missing_values"] = safe_int(
+    quality_row.get("missing_values", row.get("missing_values", 0))
+)
+merged["duplicate_rows"] = safe_int(
+    quality_row.get("duplicate_rows", row.get("duplicate_rows", 0))
+)
 
     # Keep uploaded values when the quality table lacks them.
     merged["rows"] = safe_int(
