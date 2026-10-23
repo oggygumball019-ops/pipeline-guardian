@@ -69,6 +69,13 @@ Use a CSV containing these required columns:
 | `records_processed` | Number of records processed | `1200` |
 
 Optional columns: `business_use`, `failed_checks`.
+business_use
+failed_checks
+rows
+missing_values
+duplicate_rows
+last_updated_hours
+expected_min_rows
 
 A sample file is included at `data/sample_pipeline_runs.csv`.
 
