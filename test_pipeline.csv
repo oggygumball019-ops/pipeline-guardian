@@ -1,6 +1,7 @@
 
-pipeline_id,status,duration_min,last_run,records_processed,business_use,failed_checks
-orders_pipeline,Success,12,2026-10-23 07:00:00,1200,Sales dashboard,0
-customers_pipeline,Failed,35,2026-10-23 06:00:00,0,Customer analytics,2
-inventory_pipeline,Warning,28,2026-10-23 05:00:00,150,Inventory dashboard,1
-payments_pipeline,Delayed,50,2026-10-23 04:00:00,800,Finance reports,0
+pipeline_id,status,duration_min,last_run,records_processed,business_use,failed_checks,last_updated_hours,expected_min_rows
+orders_pipeline,Success,12,2026-10-23 07:00:00,1200,Sales dashboard,0,1,100
+customers_pipeline,Failed,35,2026-10-23 06:00:00,0,Customer analytics,2,2,100
+inventory_pipeline,Warning,28,2026-10-23 05:00:00,150,Inventory dashboard,1,8,100
+payments_pipeline,Delayed,50,2026-10-23 04:00:00,800,Finance reports,0,8,500
+
